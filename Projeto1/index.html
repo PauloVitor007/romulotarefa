@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor Decimal para Binário</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="main" class="h-screen flex items-center justify-center bg-gray-100">
+        <form class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-96" id="meuForm">
+            <h2 class="block text-gray-700 text-xl font-bold mb-4 text-center">Conversor Decimal -> Binário</h2>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="decimal">
+                  Digite um número decimal
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       type="number" id="decimal" placeholder="Ex: 10" required>
+            </div>
+            
+            <div class="flex items-center justify-center">
+                <input class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline cursor-pointer" 
+                       type="submit" value="Converter">
+            </div>
+
+            <div class="mt-6 text-center">
+                <p class="text-gray-600 text-sm">Resultado em Binário:</p>
+                <p id="resultado" class="text-2xl font-bold text-blue-600 min-h-[32px]"></p>
+            </div>
+        </form>
+    </div>
+    
+    <script type="module">
+        import { binaryConverter } from "./base-converter.js";
+
+        document.getElementById("meuForm").addEventListener("submit", function (e){
+            e.preventDefault();
+            
+            // Pega o valor do input
+            let numero = parseInt(document.getElementById("decimal").value);
+            
+            // Chama a função do professor
+            let binario = binaryConverter(numero);
+            
+            // Exibe o resultado
+            document.getElementById("resultado").innerText = binario;
+        });
+    </script>
+</body>
+</html>

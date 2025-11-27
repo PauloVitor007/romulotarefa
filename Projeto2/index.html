@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificador de Balanceamento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+
+    <div id="main" class="h-screen flex items-center justify-center bg-gray-100">
+        <form class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-[500px]" id="meuForm">
+            <h2 class="block text-gray-700 text-xl font-bold mb-4 text-center">Verificador de Símbolos</h2>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="expressao">
+                  Digite uma expressão ou código:
+                </label>
+                <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-32"
+                    name="expressao" id="expressao" placeholder="Ex: function teste() { return [1,2]; }"></textarea>
+            </div>
+            
+            <div class="flex flex-col items-center justify-center">
+                <input class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline cursor-pointer mb-4" type="submit" value="Verificar">
+                <p id="resultado" class="font-bold text-lg"></p>
+            </div>
+        </form>
+    </div>
+    
+    <script type="module">
+        import { validarExpressao } from "./balanceamento.js";
+
+        document.getElementById("expressao").addEventListener("keyup", validarInput);
+        document.getElementById("meuForm").addEventListener("submit", function (e){
+            e.preventDefault();
+            validarInput();
+        });
+
+        function validarInput(){
+            let expInput = document.getElementById("expressao");
+            let exp = expInput.value;
+            let resultado = document.getElementById("resultado");
+
+            if (validarExpressao(exp)) {
+                resultado.innerHTML = "Balanceado Corretamente ✅";
+                resultado.className = "font-bold text-lg text-green-600";
+            } else {
+                resultado.innerHTML = "Não Balanceado ❌";
+                resultado.className = "font-bold text-lg text-red-600";
+            }
+        }
+    </script>
+</body>
+</html>
