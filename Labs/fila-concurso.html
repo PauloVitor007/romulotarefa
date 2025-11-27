@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Concurso - IFPB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white p-6 shadow-lg">
+        <div class="container mx-auto">
+            <h1 class="text-3xl font-bold">Sistema de Convocação - Concurso Público</h1>
+            <p class="text-blue-200 text-sm mt-1">Lógica: 5 Ampla -> 1 Cota Racial | 20 Total -> 1 PcD</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 grid grid-cols-1 xl:grid-cols-4 gap-6">
+        
+        <!-- Coluna de Inserção -->
+        <div class="xl:col-span-1 bg-white p-6 rounded-lg shadow-md h-fit">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">Cadastrar Candidato</h2>
+            
+            <input type="text" id="nomeCandidato" placeholder="Nome do Candidato" class="w-full border p-2 rounded mb-4">
+            
+            <div class="space-y-3">
+                <button onclick="adicionar('ampla')" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded font-semibold text-left px-4 flex justify-between">
+                    <span>Ampla Concorrência</span>
+                    <span class="bg-blue-700 px-2 rounded text-xs py-1">Fila A</span>
+                </button>
+                <button onclick="adicionar('cota')" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded font-semibold text-left px-4 flex justify-between">
+                    <span>Cotas Raciais (20%)</span>
+                    <span class="bg-orange-700 px-2 rounded text-xs py-1">Fila B</span>
+                </button>
+                <button onclick="adicionar('pcd')" class="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 rounded font-semibold text-left px-4 flex justify-between">
+                    <span>PcD (5%)</span>
+                    <span class="bg-purple-700 px-2 rounded text-xs py-1">Fila C</span>
+                </button>
+            </div>
+
+            <!-- Contadores de Estado -->
+            <div class="mt-8 p-4 bg-gray-100 rounded text-sm text-gray-600">
+                <p class="font-bold mb-2">Status da Lógica:</p>
+                <p>Total Chamados: <span id="lblTotal" class="font-mono font-bold text-black">0</span></p>
+                <p>Seq. Ampla Atual: <span id="lblSeqAmpla" class="font-mono font-bold text-black">0</span>/5</p>
+                <div class="mt-2 text-xs italic">
+                    Próximo PcD no chamado #<span id="lblNextPcd">20</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna das Filas Visuais -->
+        <div class="xl:col-span-2 grid grid-rows-3 gap-4">
+            
+            <!-- Fila Ampla -->
+            <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500 relative">
+                <h3 class="font-bold text-blue-700 mb-2">Fila Ampla Concorrência</h3>
+                <div id="fila-ampla" class="flex gap-2 overflow-x-auto pb-2 min-h-[50px]"></div>
+                <div class="absolute top-2 right-2 text-xs text-gray-400" id="count-ampla">0</div>
+            </div>
+
+            <!-- Fila Cotas -->
+            <div class="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500 relative">
+                <h3 class="font-bold text-orange-700 mb-2">Fila Cotas Raciais</h3>
+                <div id="fila-cota" class="flex gap-2 overflow-x-auto pb-2 min-h-[50px]"></div>
+                <div class="absolute top-2 right-2 text-xs text-gray-400" id="count-cota">0</div>
+            </div>
+
+            <!-- Fila PcD -->
+            <div class="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500 relative">
+                <h3 class="font-bold text-purple-700 mb-2">Fila PcD</h3>
+                <div id="fila-pcd" class="flex gap-2 overflow-x-auto pb-2 min-h-[50px]"></div>
+                <div class="absolute top-2 right-2 text-xs text-gray-400" id="count-pcd">0</div>
+            </div>
+        </div>
+
+        <!-- Coluna de Ação e Histórico -->
+        <div class="xl:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col h-[600px]">
+            <button onclick="convocarProximo()" class="w-full bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-4 rounded-lg shadow-lg mb-6 transform transition hover:scale-105">
+                CONVOCAR PRÓXIMO
+            </button>
+
+            <h3 class="font-bold text-gray-700 mb-2 border-b pb-2">Histórico de Convocação</h3>
+            <div id="historico" class="flex-1 overflow-y-auto space-y-2 pr-2">
+                <!-- Itens do histórico -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Estrutura de Fila Simples para armazenamento
+        class Queue {
+            constructor() { this.items = []; }
+            enqueue(el) { this.items.push(el); }
+            dequeue() { return this.items.shift(); }
+            isEmpty() { return this.items.length === 0; }
+            size() { return this.items.length; }
+        }
+
+        // Estado Global
+        const filas = {
+            ampla: new Queue(),
+            cota: new Queue(),
+            pcd: new Queue()
+        };
+
+        // Contadores de Lógica
+        let totalChamados = 0;
+        let sequenciaAmpla = 0; 
+
+        // Função para adicionar candidatos
+        function adicionar(tipo) {
+            const input = document.getElementById('nomeCandidato');
+            const nome = input.value.trim();
+            if (!nome) return alert("Digite o nome do candidato!");
+
+            filas[tipo].enqueue(nome);
+            input.value = '';
+            input.focus();
+            renderizarFilas();
+        }
+
+        // Lógica Principal de Convocação
+        function convocarProximo() {
+            let tipoConvocado = '';
+            let candidato = '';
+            let motivo = '';
+
+            // Regra 1: A cada 20 candidatos (no total), chama 1 PcD
+            // (Assumindo que o 20º, 40º, etc. deve ser PcD ou a posição reservada é essa)
+            // Se totalChamados + 1 for multiplo de 20, a vez é do PcD
+            const proximaPosicao = totalChamados + 1;
+
+            if (proximaPosicao % 20 === 0) {
+                if (!filas.pcd.isEmpty()) {
+                    tipoConvocado = 'pcd';
+                    motivo = 'Cota PcD (Ciclo 20)';
+                } else {
+                    // Fallback se não tiver PcD: segue lógica normal? Vamos assumir que sim.
+                    motivo = 'Cota PcD vazia -> Fallback';
+                    // Tenta seguir o fluxo normal abaixo
+                }
+            }
+
+            // Se não foi decidido ser PcD acima (ou estava vazia)
+            if (!tipoConvocado) {
+                // Regra 2: A cada 5 de ampla, chama 1 de cotas raciais.
+                // Se já chamamos 5 da ampla seguidos neste ciclo, agora é Cota
+                if (sequenciaAmpla >= 5) {
+                    if (!filas.cota.isEmpty()) {
+                        tipoConvocado = 'cota';
+                        motivo = 'Cota Racial (Ciclo 5 Ampla)';
+                        sequenciaAmpla = 0; // Reseta ciclo da ampla
+                    } else {
+                        // Se não tem cota, volta para ampla?
+                        tipoConvocado = 'ampla';
+                        motivo = 'Cota Racial Vazia -> Ampla';
+                        sequenciaAmpla++; 
+                    }
+                } else {
+                    // Turno da Ampla
+                    if (!filas.ampla.isEmpty()) {
+                        tipoConvocado = 'ampla';
+                        motivo = 'Ampla Concorrência';
+                        sequenciaAmpla++;
+                    } else if (!filas.cota.isEmpty()) {
+                        // Ampla vazia, tenta cota
+                        tipoConvocado = 'cota';
+                        motivo = 'Ampla Vazia -> Cota';
+                    } else if (!filas.pcd.isEmpty()) {
+                        // Tudo vazio, tenta PcD
+                        tipoConvocado = 'pcd';
+                        motivo = 'Restantes -> PcD';
+                    } else {
+                        return alert("Todas as filas estão vazias!");
+                    }
+                }
+            }
+
+            // Executa a convocação
+            if (tipoConvocado) {
+                candidato = filas[tipoConvocado].dequeue();
+                totalChamados++;
+                registrarHistorico(candidato, tipoConvocado, motivo, totalChamados);
+                renderizarFilas();
+                atualizarStats();
+            }
+        }
+
+        // Funções de Interface
+        function renderizarFilas() {
+            const cores = { ampla: 'bg-blue-100 text-blue-800', cota: 'bg-orange-100 text-orange-800', pcd: 'bg-purple-100 text-purple-800' };
+            
+            ['ampla', 'cota', 'pcd'].forEach(tipo => {
+                const div = document.getElementById(`fila-${tipo}`);
+                div.innerHTML = '';
+                document.getElementById(`count-${tipo}`).innerText = filas[tipo].size();
+
+                filas[tipo].items.forEach(nome => {
+                    const el = document.createElement('div');
+                    el.className = `${cores[tipo]} px-3 py-1 rounded text-sm font-medium whitespace-nowrap flex items-center shadow-sm`;
+                    el.innerText = nome;
+                    div.appendChild(el);
+                });
+            });
+        }
+
+        function registrarHistorico(nome, tipo, motivo, posicao) {
+            const div = document.getElementById('historico');
+            const coresBorder = { ampla: 'border-blue-500', cota: 'border-orange-500', pcd: 'border-purple-500' };
+            
+            const item = document.createElement('div');
+            item.className = `bg-gray-50 p-3 rounded border-l-4 ${coresBorder[tipo]} shadow-sm animate-pulse-once`;
+            item.innerHTML = `
+                <div class="flex justify-between">
+                    <span class="font-bold text-gray-800">#${posicao} ${nome}</span>
+                    <span class="text-xs text-gray-500 uppercase">${tipo}</span>
+                </div>
+                <div class="text-xs text-gray-400 mt-1">${motivo}</div>
+            `;
+            div.prepend(item);
+        }
+
+        function atualizarStats() {
+            document.getElementById('lblTotal').innerText = totalChamados;
+            document.getElementById('lblSeqAmpla').innerText = sequenciaAmpla;
+            // Próximo múltiplo de 20
+            const nextPcd = Math.ceil((totalChamados + 0.1) / 20) * 20;
+            document.getElementById('lblNextPcd').innerText = nextPcd;
+        }
+
+        // CSS para animação simples
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes highlight { 0% { background-color: #d1fae5; } 100% { background-color: #f9fafb; } }
+            .animate-pulse-once { animation: highlight 1s ease-out; }
+        `;
+        document.head.appendChild(style);
+
+    </script>
+</body>
+</html>

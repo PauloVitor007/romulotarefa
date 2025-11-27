@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Fila com Prioridade - IFPB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-8 font-sans">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold text-slate-800 mb-8 text-center">Fila de Prioridade (Hospital)</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Formulário de Entrada -->
+            <div class="bg-white p-6 rounded-lg shadow-lg h-fit">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Novo Paciente</h2>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">Nome</label>
+                    <input type="text" id="nome" class="mt-1 block w-full border rounded-md p-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Prioridade</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center p-2 border rounded cursor-pointer hover:bg-red-50">
+                            <input type="radio" name="prioridade" value="1" class="text-red-600">
+                            <span class="ml-2 font-bold text-red-600">Alta (Emergência) - 1</span>
+                        </label>
+                        <label class="flex items-center p-2 border rounded cursor-pointer hover:bg-yellow-50">
+                            <input type="radio" name="prioridade" value="2" class="text-yellow-600">
+                            <span class="ml-2 font-bold text-yellow-600">Média (Urgência) - 2</span>
+                        </label>
+                        <label class="flex items-center p-2 border rounded cursor-pointer hover:bg-green-50">
+                            <input type="radio" name="prioridade" value="3" class="text-green-600" checked>
+                            <span class="ml-2 font-bold text-green-600">Baixa (Normal) - 3</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button onclick="adicionar()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition">
+                    Enfileirar
+                </button>
+            </div>
+
+            <!-- Visualização da Fila -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Fila de Espera</h2>
+                        <button onclick="atender()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow">
+                            Chamar Próximo
+                        </button>
+                    </div>
+
+                    <div id="fila-visual" class="space-y-2 min-h-[200px] max-h-[400px] overflow-y-auto pr-2">
+                        <!-- Pacientes aqui -->
+                        <p class="text-center text-gray-400 py-10">Nenhum paciente na fila.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+                    <p>Log de Atendimento:</p>
+                    <div id="log" class="h-20 overflow-y-auto mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class QElement {
+            constructor(element, priority) {
+                this.element = element;
+                this.priority = priority;
+            }
+        }
+
+        class PriorityQueue {
+            constructor() {
+                this.items = [];
+            }
+
+            // A lógica de prioridade está aqui: O menor número tem maior prioridade (1 > 2 > 3)
+            enqueue(element, priority) {
+                const qElement = new QElement(element, priority);
+                let contain = false;
+
+                // Percorre a fila para encontrar a posição correta
+                for (let i = 0; i < this.items.length; i++) {
+                    if (this.items[i].priority > qElement.priority) {
+                        this.items.splice(i, 0, qElement);
+                        contain = true;
+                        break;
+                    }
+                }
+
+                // Se não encontrou posição (maior prioridade numérica ou fila vazia), insere no fim
+                if (!contain) {
+                    this.items.push(qElement);
+                }
+            }
+
+            dequeue() {
+                if (this.isEmpty()) return "Fila Vazia";
+                return this.items.shift();
+            }
+
+            isEmpty() {
+                return this.items.length === 0;
+            }
+
+            getItems() {
+                return this.items;
+            }
+        }
+
+        const pq = new PriorityQueue();
+
+        function adicionar() {
+            const nomeInput = document.getElementById('nome');
+            const prioridadeInput = document.querySelector('input[name="prioridade"]:checked');
+            
+            if(!nomeInput.value) return alert("Digite o nome!");
+
+            const nome = nomeInput.value;
+            const prioridade = parseInt(prioridadeInput.value);
+
+            pq.enqueue(nome, prioridade);
+            nomeInput.value = '';
+            atualizarTela();
+            log(`Enfileirado: ${nome} (P${prioridade})`);
+        }
+
+        function atender() {
+            if(pq.isEmpty()) return alert("Não há pacientes!");
+            const paciente = pq.dequeue();
+            log(`ATENDENDO: ${paciente.element} (P${paciente.priority})`);
+            atualizarTela();
+        }
+
+        function atualizarTela() {
+            const container = document.getElementById('fila-visual');
+            container.innerHTML = '';
+            
+            if(pq.isEmpty()){
+                container.innerHTML = '<p class="text-center text-gray-400 py-10">Nenhum paciente na fila.</p>';
+                return;
+            }
+
+            pq.getItems().forEach((item, index) => {
+                // Cores baseadas na prioridade
+                let corBorda = item.priority === 1 ? 'border-l-red-500' : (item.priority === 2 ? 'border-l-yellow-500' : 'border-l-green-500');
+                let corBg = item.priority === 1 ? 'bg-red-50' : (item.priority === 2 ? 'bg-yellow-50' : 'bg-white');
+
+                const div = document.createElement('div');
+                div.className = `${corBg} p-3 rounded shadow border border-gray-200 border-l-4 ${corBorda} flex justify-between items-center transition-all hover:scale-[1.01]`;
+                div.innerHTML = `
+                    <div>
+                        <span class="font-bold text-gray-700">#${index + 1}</span>
+                        <span class="ml-3 font-medium text-lg">${item.element}</span>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Prioridade ${item.priority}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function log(msg) {
+            const div = document.getElementById('log');
+            const p = document.createElement('p');
+            p.innerText = `> ${msg}`;
+            div.prepend(p);
+        }
+    </script>
+</body>
+</html>

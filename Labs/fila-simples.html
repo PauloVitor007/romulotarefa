@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Fila Simples - IFPB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center font-sans">
+
+    <div class="bg-white shadow-xl rounded-lg p-8 w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Gerenciador de Fila (Queue)</h1>
+        
+        <!-- Visualização da Fila -->
+        <div class="mb-6">
+            <h2 class="text-gray-600 mb-2 font-semibold">Estado Atual da Fila:</h2>
+            <div id="fila-container" class="flex gap-2 overflow-x-auto p-4 bg-gray-200 rounded-lg min-h-[80px] items-center">
+                <!-- Itens serão renderizados aqui -->
+                <span class="text-gray-400 italic w-full text-center">Fila vazia</span>
+            </div>
+        </div>
+
+        <!-- Controles -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="flex gap-2">
+                <input type="text" id="input-item" placeholder="Digite um valor..." 
+                    class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="app.adicionar()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
+                    Enqueue
+                </button>
+            </div>
+            
+            <button onclick="app.remover()" 
+                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition">
+                Dequeue
+            </button>
+        </div>
+
+        <!-- Operações de Informação -->
+        <div class="grid grid-cols-3 gap-2 border-t pt-4">
+            <button onclick="app.verFrente()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded">Front</button>
+            <button onclick="app.verTamanho()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded">Size</button>
+            <button onclick="app.verificarVazia()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded">IsEmpty</button>
+        </div>
+
+        <!-- Log de Saída -->
+        <div id="log-output" class="mt-4 p-3 bg-slate-800 text-green-400 font-mono rounded h-24 overflow-y-auto text-sm">
+            > Aguardando operações...
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Implementação da Classe Queue baseada no material do professor
+         */
+        class Queue {
+            constructor() {
+                this.items = [];
+            }
+
+            enqueue(element) {
+                this.items.push(element);
+            }
+
+            dequeue() {
+                if (this.isEmpty()) return "Fila vazia";
+                return this.items.shift();
+            }
+
+            front() {
+                if (this.isEmpty()) return "Fila vazia";
+                return this.items[0];
+            }
+
+            isEmpty() {
+                return this.items.length === 0;
+            }
+
+            size() {
+                return this.items.length;
+            }
+
+            getItems() {
+                return this.items;
+            }
+        }
+
+        // Lógica da Aplicação
+        const fila = new Queue();
+        const container = document.getElementById('fila-container');
+        const log = document.getElementById('log-output');
+        const input = document.getElementById('input-item');
+
+        const app = {
+            atualizarInterface: () => {
+                container.innerHTML = '';
+                const items = fila.getItems();
+
+                if (items.length === 0) {
+                    container.innerHTML = '<span class="text-gray-400 italic w-full text-center">Fila vazia</span>';
+                    return;
+                }
+
+                items.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-blue-500 text-white px-4 py-2 rounded shadow flex-shrink-0 animate-fade-in';
+                    div.innerText = item;
+                    // Marca o primeiro elemento
+                    if (index === 0) div.classList.add('ring-2', 'ring-yellow-400');
+                    container.appendChild(div);
+                });
+            },
+
+            logar: (msg) => {
+                const linha = document.createElement('div');
+                linha.innerText = `> ${msg}`;
+                log.prepend(linha);
+            },
+
+            adicionar: () => {
+                const valor = input.value;
+                if (!valor) return alert("Digite um valor!");
+                fila.enqueue(valor);
+                app.logar(`Enqueue: "${valor}"`);
+                input.value = '';
+                input.focus();
+                app.atualizarInterface();
+            },
+
+            remover: () => {
+                const removido = fila.dequeue();
+                app.logar(`Dequeue: ${removido}`);
+                app.atualizarInterface();
+            },
+
+            verFrente: () => {
+                app.logar(`Front: ${fila.front()}`);
+            },
+
+            verTamanho: () => {
+                app.logar(`Size: ${fila.size()}`);
+            },
+
+            verificarVazia: () => {
+                app.logar(`IsEmpty: ${fila.isEmpty()}`);
+            }
+        };
+
+        // Adicionar com Enter
+        input.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') app.adicionar();
+        });
+
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    </style>
+</body>
+</html>
